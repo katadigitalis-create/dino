@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excavación de dinosaurios 3D</title>
+<style>
+:root{--sand:#e9c98f;--soil:#8a5a32;--deep:#4a2e17;--bone:#fbf3df;--ink:#2a1a0c;--ok:#3f8f4a;--bad:#b8412f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:inherit}
+html,body{margin:0;min-height:100%;font-family:Rockwell,"Roboto Slab",Georgia,serif;color:var(--ink);background:#f2d9a6}
+body{background:linear-gradient(#9fd3e8,#f2d9a6 55%,#d9b070);min-height:100vh;position:relative}
+#night{position:fixed;inset:0;background:#070a2a;opacity:0;pointer-events:none;z-index:5;transition:opacity .3s}
+#stars{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:0;background-image:radial-gradient(2px 2px at 20% 15%,#fff,transparent),radial-gradient(2px 2px at 70% 25%,#fff,transparent),radial-gradient(1.5px 1.5px at 40% 8%,#fff,transparent),radial-gradient(2px 2px at 88% 10%,#fff,transparent),radial-gradient(1.5px 1.5px at 10% 40%,#fff,transparent)}
+main{max-width:980px;margin:0 auto;padding:12px;position:relative;z-index:1}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:1.4rem;margin:0;flex:1;min-width:180px}
+#mute{border:2px solid var(--deep);background:var(--bone);border-radius:8px;padding:6px 10px;font-size:1.1rem;cursor:pointer}
+#sky{position:relative;height:34px;margin:10px 0;border:3px solid var(--deep);border-radius:20px;background:linear-gradient(90deg,#ffe38a,#ff9a4a 70%,#2a2a6a);overflow:hidden}
+#orb{position:absolute;top:2px;left:0;font-size:24px;transition:left .2s linear}
+#clock{position:absolute;right:12px;top:5px;font-weight:700;color:#fff;text-shadow:0 1px 2px #000}
+#stat{text-align:center;margin:4px 0 10px;font-size:.95rem}
+#field{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.mound{position:relative;border:0;background:none;cursor:pointer;padding:0;text-align:center;font:inherit;color:inherit}
+.mound .hill{height:110px;border-radius:70px 70px 12px 12px;background:radial-gradient(circle at 35% 30%,#b98450,var(--soil) 60%,var(--deep));border:3px solid var(--deep);display:flex;align-items:flex-start;justify-content:center;padding-top:14px;font-size:2rem;transition:transform .15s}
+.mound:hover:not(:disabled) .hill{transform:translateY(-4px)}
+.mound:disabled{cursor:default}
+.mound .lab{display:block;margin-top:6px;font-weight:700;font-size:.85rem;padding:3px 4px;border-radius:6px;background:var(--bone);border:2px solid var(--deep)}
+.dig .hill{animation:shake .18s linear infinite}
+@keyframes shake{0%{transform:translate(-3px,0) rotate(-2deg)}50%{transform:translate(3px,2px) rotate(2deg)}100%{transform:translate(-3px,0) rotate(-2deg)}}
+.pick{display:inline-block;animation:swing .3s ease-in-out infinite alternate;transform-origin:80% 80%}
+@keyframes swing{from{transform:rotate(-40deg)}to{transform:rotate(35deg)}}
+.dust{animation:dust 1s forwards}
+@keyframes dust{0%{filter:none;transform:scale(1)}100%{filter:blur(8px);transform:scale(1.6) translateY(20px);opacity:0}}
+h2{font-size:1.05rem;margin:18px 0 8px}
+#skels{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.card{background:var(--bone);border:3px solid var(--deep);border-radius:12px;padding:8px}
+.card.done{border-color:var(--ok);box-shadow:0 0 0 3px #9be3a4}
+.card b{display:flex;justify-content:space-between;font-size:.9rem}
+.card svg{width:100%;height:auto;display:block}
+.part{transition:opacity .5s,transform .5s}
+.part.off{opacity:.15}.card svg{background:#4a3520;border-radius:8px}.card .part{filter:drop-shadow(1px 2px 1px rgba(0,0,0,.6))}.card svg.live{background:none;overflow:visible}.stage{position:relative;perspective:500px;border-radius:8px;background:linear-gradient(#8ec9df,#e3c58a 68%,#9a7a45);padding:6px 4px 12px}.stage .sh{position:absolute;left:25%;right:25%;bottom:8px;height:8px;border-radius:50%;background:rgba(0,0,0,.35);filter:blur(3px);animation:shd .9s ease-in-out infinite}.live{transform-origin:50% 100%;animation:hop .9s ease-in-out infinite;filter:drop-shadow(0 4px 3px rgba(0,0,0,.45));display:block;width:100%;height:auto}@keyframes hop{0%,100%{transform:translateY(0) scale(1.05,.93) rotateY(-16deg)}50%{transform:translateY(-22px) scale(.97,1.05) rotateY(16deg)}}@keyframes shd{0%,100%{transform:scale(1.1);opacity:.9}50%{transform:scale(.7);opacity:.45}}#big .stage{width:min(380px,80vw);margin:0 auto 12px}.dirt{position:absolute;left:50%;top:22%;width:var(--s);height:var(--s);border-radius:2px;pointer-events:none;z-index:3;animation:fly .8s ease-out forwards}@keyframes fly{0%{transform:translate(0,0) rotate(0);opacity:1}40%{transform:translate(calc(var(--dx)*.6),var(--up)) rotate(120deg)}100%{transform:translate(var(--dx),50px) rotate(360deg);opacity:0}}
+.part.new{animation:pop .7s}
+@keyframes pop{0%{transform:translateY(-30px) scale(1.5);opacity:0}100%{transform:none;opacity:1}}
+#modal{position:fixed;inset:0;z-index:10;background:rgba(20,10,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
+#box{background:var(--bone);border:4px solid var(--deep);border-radius:16px;padding:20px;max-width:520px;width:100%;text-align:center}
+#q{font-size:1.4rem;line-height:1.4;margin:10px 0 16px}
+#opts{display:flex;gap:12px;justify-content:center}
+#opts button{flex:1;font:inherit;font-size:1.3rem;font-weight:700;padding:14px 8px;border-radius:10px;border:3px solid var(--deep);background:#fff;cursor:pointer;color:var(--ink)}
+#opts button:hover{background:var(--sand)}
+#bone{font-size:3rem}
+#fb{min-height:1.5em;margin-top:12px;font-weight:700}
+#end{position:fixed;inset:0;z-index:20;background:rgba(10,5,0,.8);display:none;align-items:center;justify-content:center;padding:16px;color:var(--bone);text-align:center}
+#end div{max-width:420px}
+#end h2{font-size:1.8rem}
+#end button{font:inherit;font-size:1.1rem;padding:10px 20px;border-radius:10px;border:3px solid var(--bone);background:var(--soil);color:var(--bone);cursor:pointer}
+@media(max-width:640px){#field{gap:8px}.mound .hill{height:90px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important}}
+#field{grid-template-columns:.8fr 1fr 1.25fr;align-items:end}.mound:nth-child(1) .hill{height:78px;font-size:1.5rem;padding-top:8px}.mound:nth-child(2) .hill{height:110px}.mound:nth-child(3) .hill{height:148px;font-size:2.7rem;padding-top:22px}@media(max-width:640px){.mound:nth-child(1) .hill{height:60px}.mound:nth-child(2) .hill{height:88px}.mound:nth-child(3) .hill{height:118px}}
+#stars{opacity:1!important;background-image:none}.st{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 4px 1px rgba(255,255,255,.8);visibility:hidden;animation:tw 1.5s ease-in-out infinite}.st.on{visibility:visible}@keyframes tw{0%,100%{opacity:.2;transform:scale(.5)}50%{opacity:1;transform:scale(1.4)}}
+.cry{position:relative;display:inline-block;animation:sob .45s ease-in-out infinite}@keyframes sob{50%{transform:translateY(3px) rotate(-4deg)}}.tear{position:absolute;top:40%;width:7px;height:11px;border-radius:50% 50% 50% 50%/65% 65% 35% 35%;background:#6ec6ff;box-shadow:inset -1px -1px 2px #2a8fd8;opacity:0;pointer-events:none;animation:tr 1s ease-out infinite}@keyframes tr{0%{transform:translate(0,0);opacity:0}15%{opacity:1}40%{transform:translate(calc(var(--dx)*.7),var(--up))}100%{transform:translate(var(--dx),70px);opacity:0}}
+.c3{width:100%;height:auto;display:block;border-radius:8px;background:radial-gradient(#6b4a2a,#3a2614)}.c3.fin{background:linear-gradient(#8ec9df,#e3c58a 68%,#9a7a45)}#big .c3{width:min(480px,86vw);margin:0 auto 12px;border:3px solid var(--bone);border-radius:12px}
+</style></head><body>
+<div id="night"></div><div id="stars"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gb" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="110"><stop offset="0" stop-color="#fffaf0"/><stop offset=".55" stop-color="#e2d2a8"/><stop offset="1" stop-color="#a8946a"/></linearGradient><linearGradient id="s1" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="110"><stop offset="0" stop-color="#b99a68"/><stop offset="1" stop-color="#5a4529"/></linearGradient><linearGradient id="s2" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="110"><stop offset="0" stop-color="#e2803a"/><stop offset="1" stop-color="#6e2c10"/></linearGradient><linearGradient id="s3" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="110"><stop offset="0" stop-color="#5cb8c8"/><stop offset="1" stop-color="#1c5062"/></linearGradient></defs></svg>
+<main>
+<header><h1>🦴 Excavación de dinosaurios</h1><button id="mute" aria-label="Sonido">🔊</button></header>
+<div id="sky"><span id="orb">☀️</span><span id="clock">8:00</span></div>
+<div id="stat">Elige un montículo y cava. Responde bien para quedarte con el hueso; si fallas, se convierte en polvo y pierdes tiempo de luz.</div>
+<div id="field"></div>
+<h2>Esqueletos: ¡completa uno antes del atardecer!</h2>
+<div id="skels"></div>
+</main>
+<div id="modal"><div id="box"><div id="bone">🦴</div><div id="q"></div><div id="opts"></div><div id="fb"></div></div></div>
+<div id="end"><div><div id="big"></div><h2 id="et"></h2><p id="em"></p><button onclick="start()">Nuevo día, nueva excavación</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const S=`Yo ___ estudiante.|soy|estoy
+Mi madre ___ en la cocina.|está|es
+Ellos ___ de México.|son|están
+Hoy ___ lunes.|es|está
+¿Cómo ___ tú?|estás|eres
+Mi hermana ___ muy simpática.|es|está
+La sopa ___ fría.|está|es
+Nosotros ___ cansados hoy.|estamos|somos
+Tú ___ mi mejor amigo.|eres|estás
+Madrid ___ en España.|está|es
+Mi padre ___ médico.|es|está
+La puerta ___ abierta.|está|es
+Ustedes ___ profesores.|son|están
+Yo ___ muy contento hoy.|estoy|soy
+Esta mesa ___ de madera.|es|está
+Ella ___ cocinando ahora.|está|es
+Los libros ___ sobre la mesa.|están|son
+Mi casa ___ grande y bonita.|es|está
+¿De dónde ___ usted?|es|está
+Nosotros ___ italianos.|somos|estamos
+El café ___ muy caliente.|está|es
+Son las tres y ___ en punto.|es|está
+La fiesta ___ en mi casa.|es|está
+Mis abuelos ___ muy simpáticos.|son|están
+Yo ___ en la biblioteca ahora.|estoy|soy
+El cielo ___ azul hoy.|está|es
+Pedro ___ alto y delgado.|es|está
+¿Dónde ___ los baños?|están|son
+Hoy ___ nublado.|está|es
+Vosotros ___ españoles.|sois|estáis
+Mi coche ___ rojo.|es|está
+La ventana ___ sucia.|está|es
+Ana ___ enferma desde ayer.|está|es
+Mi gato ___ negro.|es|está
+Los niños ___ jugando en el parque.|están|son
+Tú ___ muy joven.|eres|estás
+Yo ___ de Hungría.|soy|estoy
+El examen ___ mañana.|es|está
+La ciudad ___ muy ruidosa.|es|está
+¿___ tú listo para salir?|Estás|Eres
+Mi tía ___ abogada.|es|está
+El museo ___ cerrado hoy.|está|es
+Ellas ___ muy inteligentes.|son|están
+Nosotros ___ en casa.|estamos|somos
+Este libro ___ interesante.|es|está
+El niño ___ triste porque perdió su juguete.|está|es
+Mi ciudad ___ cerca del río.|está|es
+La película ___ muy aburrida.|es|está
+Tus zapatos ___ nuevos.|son|están
+Hoy yo ___ muy ocupado.|estoy|soy
+Mi profesor ___ muy amable.|es|está
+La leche ___ en la nevera.|está|es
+El bolso ___ de cuero.|es|está
+¿Qué hora ___?|es|está
+Nosotros ___ hermanos.|somos|estamos
+Mi abuela ___ dormida.|está|es
+Las flores ___ amarillas.|son|están
+Yo ___ muy nervioso por el examen.|estoy|soy
+El agua ___ fría.|está|es
+Carlos ___ en el trabajo.|está|es
+Ellos ___ vecinos.|son|están
+Mi mochila ___ pesada.|es|está
+La tienda ___ al lado del banco.|está|es
+Tú ___ muy amable con todos.|eres|estás
+La pizza ___ deliciosa.|está|es
+Estas manzanas ___ verdes.|son|están
+La clase ___ a las nueve.|es|está
+El perro ___ dormido en el sofá.|está|es
+Mi hermano ___ deportista.|es|está
+¿Tú ___ enfadado conmigo?|estás|eres
+Hoy ___ 16 de noviembre.|es|está
+Los estudiantes ___ en clase.|están|son
+Su casa ___ muy limpia hoy.|está|es
+La paella ___ un plato español.|es|está
+Yo ___ bajo, pero mi hermano ___ alto.|soy|estoy
+Mi vecino ___ ingeniero.|es|está
+La sala ___ llena de gente.|está|es
+Vosotros ___ muy cansados.|estáis|sois
+El bebé ___ llorando.|está|es
+Este reloj ___ de oro.|es|está
+Mi móvil ___ en la mochila.|está|es
+Marta ___ rubia y tiene ojos verdes.|es|está
+El restaurante ___ lleno esta noche.|está|es
+Ustedes ___ muy amables.|son|están
+Mi bicicleta ___ rota.|está|es
+La sopa ___ muy rica.|está|es
+Tú ___ de Argentina, ¿verdad?|eres|estás
+El tren ___ en la estación.|está|es
+Nosotros ___ estudiando español.|estamos|somos
+Mi jefe ___ muy exigente.|es|está
+Las tiendas ___ abiertas hasta las ocho.|están|son
+El concierto ___ en el teatro.|es|está
+Hoy mis padres ___ de viaje.|están|son
+Ese chico ___ mi primo.|es|está
+La cama ___ sin hacer.|está|es
+¿Cómo ___ tu madre? ¿___ bien?|está|es
+Los tomates ___ rojos.|son|están
+Yo ___ muy aburrido en casa.|estoy|soy
+La reunión ___ a las diez.|es|está
+Tu abrigo ___ en el armario.|está|es
+Este queso ___ de cabra.|es|está
+Ella ___ muy guapa con ese vestido hoy.|está|es
+El profesor ___ hablando con un alumno.|está|es`.split("\n").map(l=>{const [t,a,b]=l.split("|");return{t:t.replace("¿Cómo ___ tu madre? ¿___ bien?","¿Cómo ___ tu madre?").replace("Yo ___ bajo, pero mi hermano ___ alto.","Yo ___ bajo."),a,b}});
+const D=[{n:"Triceratops"},{n:"Velociraptor"},{n:"Elasmosaurus"}];
+const P=["cráneo","columna","costillas","patas","cola"];
+const DAY=300;let have,mounds,el,pool,busy,over,AC,muted=false,newest=null,tmr;
+const $=id=>document.getElementById(id);
+// ---------- audio
+function ac(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}return AC}
+function tone(f,t,d,ty="sine",v=.2,f2){const a=ac();if(!a||muted)return;const o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.setValueAtTime(f,a.currentTime+t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,a.currentTime+t+d);g.gain.setValueAtTime(v,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+d);o.connect(g).connect(a.destination);o.start(a.currentTime+t);o.stop(a.currentTime+t+d+.05)}
+function noise(t,d,f0,f1,v=.3,ty="lowpass"){const a=ac();if(!a||muted)return;const n=a.sampleRate*d,b=a.createBuffer(1,n,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<n;i++)x[i]=Math.random()*2-1;const s=a.createBufferSource();s.buffer=b;const fl=a.createBiquadFilter();fl.type=ty;fl.frequency.setValueAtTime(f0,a.currentTime+t);fl.frequency.exponentialRampToValueAtTime(f1,a.currentTime+t+d);const g=a.createGain();g.gain.setValueAtTime(v,a.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+t+d);s.connect(fl).connect(g).connect(a.destination);s.start(a.currentTime+t)}
+const snd={
+ dig(){noise(0,.12,900,200,.5);tone(140,0,.1,"square",.12,60)},
+ found(){tone(660,0,.15,"triangle",.2);tone(990,.12,.25,"triangle",.2)},
+ good(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.09,.25,"triangle",.22))},
+ crumble(){noise(0,1,3000,200,.5,"bandpass");noise(.15,.7,1500,150,.4,"highpass");tone(180,0,.5,"sawtooth",.15,50)},
+ win(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,i*.14,.35,"square",.15))},
+ lose(){[392,330,262,196].forEach((f,i)=>tone(f,i*.3,.5,"sawtooth",.18))},
+ tick(){tone(80,0,.15,"sine",.2,40)},
+ sad(){[392,330,262].forEach((f,i)=>{tone(f,i*.35,.5,"triangle",.2,f*.94);tone(f/2,i*.35,.5,"sine",.12,f*.47)})},
+ cry(){const a=ac();if(!a||muted)return;for(let k=0;k<4;k++){const t0=a.currentTime+k*.45,d=.36,o=a.createOscillator(),g=a.createGain(),f1=a.createBiquadFilter(),f2=a.createBiquadFilter(),lf=a.createOscillator(),lg=a.createGain();o.type="sawtooth";o.frequency.setValueAtTime(430-k*12,t0);o.frequency.linearRampToValueAtTime(680-k*20,t0+.1);o.frequency.linearRampToValueAtTime(430-k*12,t0+d);lf.frequency.value=7+k;lg.gain.value=20;lf.connect(lg);lg.connect(o.frequency);f1.type=f2.type="bandpass";f1.frequency.setValueAtTime(900,t0);f1.frequency.linearRampToValueAtTime(650,t0+d);f1.Q.value=5;f2.frequency.value=2500;f2.Q.value=6;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.26,t0+.05);g.gain.linearRampToValueAtTime(.16,t0+d*.7);g.gain.linearRampToValueAtTime(0,t0+d);o.connect(f1);o.connect(f2);f1.connect(g);f2.connect(g);g.connect(a.destination);o.start(t0);lf.start(t0);o.stop(t0+d+.05);lf.stop(t0+d+.05);noise(k*.45+.37,.07,2600,1500,.06,"bandpass")}}};
+$("mute").onclick=()=>{muted=!muted;$("mute").textContent=muted?"🔇":"🔊";ac()};
+// ---------- skeletons
+// ---------- game
+function pickBone(avoid){const c=[];D.forEach((d,i)=>P.forEach((p,k)=>{if(!have[i][k]&&!avoid.some(m=>m&&m.d==i&&m.p==k))c.push([i,k])}));const r=c[Math.floor(Math.random()*c.length)];return r?{d:r[0],p:r[1]}:null}
+function renderField(){$("field").innerHTML=mounds.map((m,i)=>`<button class="mound ${m.dig?"dig":""}" ${busy||over?"disabled":""} data-i="${i}" aria-label="Montículo ${i+1}"><div class="hill">${m.dig?'<span class="pick">⛏️</span>':"⛏️"}</div><span class="lab">${m.dig?"Cavando…":"¿Qué habrá debajo?"}</span></button>`).join("");
+ document.querySelectorAll(".mound").forEach(b=>b.onclick=()=>dig(+b.dataset.i))}
+function ammSVG(){let c="";for(let t=1.2;t<=18.9;t+=.17){const R=2*Math.exp(.16*t),rc=R*.683,rr=R*.317,x=50+rc*Math.cos(t),y=50-rc*Math.sin(t);c+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(1)}" fill="hsl(36,28%,${48+Math.round(t*1.6)}%)" stroke="#5a4428" stroke-width=".7"/>`}return`<svg viewBox="0 0 100 100" width="120" height="120" style="filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))"><circle cx="50" cy="50" r="48" fill="#8f806a" stroke="#4a3a28" stroke-width="2"/>${c}</svg>`}
+function fresh(i){const o=mounds.map((m,j)=>j==i?null:m);mounds[i]=(Math.random()<.22&&!o.some(m=>m&&m.amm))?{amm:1}:(pickBone(o)||pickBone([]))}
+function start(){have=D.map(()=>[0,0,0,0,0]);mounds=[];for(let i=0;i<3;i++){const o=[...mounds];mounds[i]=pickBone(o)}pool=[];busy=false;over=false;el=0;$("end").style.display="none";$("modal").style.display="none";renderField();renderSk();clearInterval(tmr);tmr=setInterval(tick,100);tick()}
+const ST=[];for(let k=0;k<160;k++){const e=document.createElement("i"),z=1.5+Math.random()*2.5;e.className="st";e.style.cssText=`left:${Math.random()*100}%;width:${z}px;height:${z}px;animation-duration:${.7+Math.random()*1.8}s;animation-delay:${-Math.random()*2}s`;e.t=.45+k/160*.5;e.f=Math.random();$("stars").appendChild(e);ST.push(e)}
+function place(){const lim=Math.max(50,$("field").getBoundingClientRect().top-12);ST.forEach(e=>e.style.top=e.f*lim+"px")}addEventListener("resize",place);
+function tick(){if(over)return;el+=.1;const r=Math.min(el/DAY,1);$("night").style.opacity=Math.max(0,r*r*.88);if(Math.round(el*10)%10==0)place();ST.forEach(e=>e.classList.toggle("on",r>e.t));$("orb").style.left=`calc(${r*100}% - ${r*30}px)`;$("orb").textContent=r>.75?"🌙":"☀️";const m=8*60+r*720;$("clock").textContent=Math.floor(m/60)+":"+String(Math.floor(m%60)).padStart(2,"0");
+ if(r>.85&&Math.round(el*10)%20==0)snd.tick();if(r>=1)finish(false)}
+function dig(i){if(busy||over)return;ac();busy=true;mounds[i].dig=1;renderField();let n=0;const iv=setInterval(()=>{snd.dig();burst(i);if(++n>=4){clearInterval(iv);mounds[i].dig=0;snd.found();ask(i)}},230)}
+function ask(i){if(over){return}
+ if(mounds[i].amm){snd.sad();snd.cry();$("bone").classList.remove("dust");$("bone").innerHTML='<span style="display:inline-flex;align-items:center;gap:14px">'+ammSVG()+'<span class="cry">😭'+Array.from({length:10},(_,k)=>{const s=k%2?1:-1;return`<i class="tear" style="left:${s<0?24:64}%;--dx:${s*(18+Math.random()*40)}px;--up:${-(8+Math.random()*16)}px;animation-delay:${k*.1}s"></i>`}).join("")+'</span></span>';$("fb").textContent="";$("q").innerHTML="<small>¡Has encontrado un fósil de amonita!</small><br>Es precioso, pero no es un hueso de dinosaurio: no se puede recoger. 😢<br><small>Qué pena…</small>";$("opts").innerHTML="";$("modal").style.display="flex";setTimeout(()=>{$("modal").style.display="none";busy=false;fresh(i);renderField()},6000);return}
+ if(!pool.length)pool=[...S].sort(()=>Math.random()-.5);const q=pool.pop(),m=mounds[i];
+ $("bone").textContent="🦴";$("fb").textContent="";$("fb").style.color="";
+ $("q").innerHTML=`<small>¡Hueso encontrado! ${D[m.d].n}: ${P[m.p]}.<br>Elige la forma correcta:</small><br>`+q.t.replace("___","<u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>");
+ const o=[q.a,q.b].sort(()=>Math.random()-.5);$("opts").innerHTML=o.map(x=>`<button>${x}</button>`).join("");
+ $("modal").style.display="flex";
+ document.querySelectorAll("#opts button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#opts button").forEach(x=>x.disabled=true);
+  if(b.textContent==q.a){snd.good();$("fb").style.color="var(--ok)";$("fb").textContent="¡Correcto! El hueso es tuyo. ✅";have[m.d][m.p]=1;newest=[m.d,m.p];setTimeout(()=>{$("modal").style.display="none";busy=false;fresh(i);renderField();renderSk();if(have[m.d].every(Boolean))finish(true,m.d)},1100)}
+  else{snd.crumble();$("bone").classList.add("dust");$("fb").style.color="var(--bad)";$("fb").textContent="¡Incorrecto! Era: "+q.a+". El hueso se ha vuelto polvo. ❌ (−10 s de luz)";el+=10;setTimeout(()=>{$("bone").classList.remove("dust");$("modal").style.display="none";busy=false;fresh(i);renderField()},1900)}})}
+function finish(w,d){if(over)return;over=true;clearInterval(tmr);setTimeout(()=>{$("modal").style.display="none";$("big").innerHTML=w?live(d):"";$("et").textContent=w?"🎉 ¡Has montado el "+D[d].n+"!":"🌙 Se hizo de noche…";$("em").textContent=w?"¡Esqueleto completo! Eres un gran paleontólogo.":"No has completado ningún esqueleto antes del atardecer.";$("end").style.display="flex";w?snd.win():snd.lose()},w?900:100)}
+function burst(i){const b=document.querySelectorAll(".mound")[i];if(!b)return;for(let k=0;k<10;k++){const e=document.createElement("i");e.className="dirt";e.style.setProperty("--dx",(Math.random()*120-60)+"px");e.style.setProperty("--up",-(25+Math.random()*45)+"px");e.style.setProperty("--s",(4+Math.random()*5)+"px");e.style.background=["#6b4423","#8a5a32","#4a2e17","#a8794a"][k%4];b.appendChild(e);setTimeout(()=>e.remove(),800)}}
+
+// ---------- 3D
+const V=(x,y,z)=>new THREE.Vector3(x,y,z),M=(c,r=.6)=>new THREE.MeshStandardMaterial({color:new THREE.Color(c).convertSRGBToLinear(),roughness:r,metalness:0}),BM=M(0xefe3c4,.5),DK=M(0x1c1208,.9),WH=M(0xffffff,.3);
+const ell=(g,m,p,s,r)=>{const e=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),m);e.position.set(...p);e.scale.set(...s);if(r)e.rotation.set(...r);g.add(e);return e};
+const cone=(g,m,p,r,h,o)=>{const e=new THREE.Mesh(new THREE.ConeGeometry(r,h,10),m);e.position.set(...p);if(o)e.rotation.set(...o);g.add(e)};
+function tube(g,m,pts,r0,r1){const c=new THREE.CatmullRomCurve3(pts.map(p=>V(...p))),N=28,geo=new THREE.TubeGeometry(c,N,1,12),pos=geo.attributes.position;
+ for(let i=0;i<=N;i++){const ct=c.getPointAt(i/N),r=r0+(r1-r0)*i/N;for(let j=0;j<13;j++){const k=i*13+j,v=V(pos.getX(k),pos.getY(k),pos.getZ(k)).sub(ct).multiplyScalar(r).add(ct);pos.setXYZ(k,v.x,v.y,v.z)}}
+ geo.computeVertexNormals();g.add(new THREE.Mesh(geo,m));ell(g,m,pts[0],[r0,r0,r0]);ell(g,m,pts[pts.length-1],[r1,r1,r1])}
+function rod(g,a,b,r){a=V(...a);b=V(...b);const d=b.clone().sub(a),e=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),10),BM);e.position.copy(a).addScaledVector(d,.5);e.quaternion.setFromUnitVectors(V(0,1,0),d.normalize());g.add(e);[a,b].forEach(p=>ell(g,BM,[p.x,p.y,p.z],[r*1.8,r*1.8,r*1.8]))}
+function vert(g,pts,rr){const c=new THREE.CatmullRomCurve3(pts.map(p=>V(...p))),n=Math.round(c.getLength()/((rr[0]+rr[1])*.75));for(let i=0;i<n;i++){const t=i/(n-1),p=c.getPointAt(t),r=rr[0]+(rr[1]-rr[0])*t;ell(g,BM,[p.x,p.y,p.z],[r*1.25,r,r]);cone(g,BM,[p.x,p.y+r*1.3,p.z],r*.3,r*1.6)}}
+function ribs(g,n,x0,x1,y,r){for(let i=0;i<n;i++){const t=i/(n-1),sc=Math.sin(t*Math.PI*.8+.3)*.4+.7,geo=new THREE.TorusGeometry(r*sc,.035,6,16,Math.PI);geo.rotateZ(Math.PI);geo.rotateY(Math.PI/2);const e=new THREE.Mesh(geo,BM);e.position.set(x0+(x1-x0)*t,y,0);g.add(e)}}
+function hd(i,sk,m,a,ey){const g=new THREE.Group(),[ex,eh,ez]=ey,mm=i?a:m;
+ if(i==0){const fg=new THREE.Group();fg.position.set(-.3,.4,0);fg.rotation.z=.45;g.add(fg);
+  ell(g,m,[.2,0,0],[.58,.4,.36]);tube(g,m,[[.45,.02,0],[.85,-.04,0],[1.2,-.16,0]],.3,.15);
+  ell(g,m,[.7,-.3,0],[.5,.13,.2]);ell(g,BM,[1.22,-.22,0],[.2,.22,.1],[0,0,-.5]);ell(g,BM,[1.1,-.38,0],[.2,.07,.09]);
+  [-1,1].forEach(s=>{ell(g,m,[.3,-.08,s*.32],[.2,.17,.08]);ell(g,m,[.5,.27,s*.24],[.2,.1,.12]);ell(g,BM,[.55,.4,s*.25],[.12,.1,.12]);ell(g,DK,[.75,-.2,s*.13],[.45,.012,.012])});
+  ell(fg,a,[0,.15,0],[.12,.72,.7]);[-1,1].forEach(s=>ell(fg,M(0x7a4a2a),[.09,.42,s*.3],[.04,.2,.17]));
+  for(let k=0;k<13;k++){const th=k/12*Math.PI;ell(fg,a,[0,.15+Math.sin(th)*.72,Math.cos(th)*.7],[.1,.1,.1])}
+  [-1,1].forEach(s=>cone(g,BM,[1.1,.72,s*.25],.1,1.25,[s*.15,0,-1.13]));cone(g,BM,[1.2,.22,0],.07,.35,[0,0,-.5])}
+ else if(i==1){ell(g,mm,[.2,0,0],[.38,.23,.21]);tube(g,mm,[[.4,0,0],[.8,-.02,0],[1.25,-.05,0]],.19,.09);
+  [-1,1].forEach(s=>ell(g,mm,[.5,.15,s*.12],[.15,.07,.08]));tube(g,mm,[[.2,-.15,0],[.65,-.3,0],[1.1,-.46,0]],.09,.045);
+  ell(g,M(0x8a2a2a,.5),[.72,-.24,0],[.45,.07,.07]);ell(g,M(0xd47a7a,.5),[.6,-.3,0],[.25,.03,.05]);
+  for(let x=.55;x<1.2;x+=.1){const r=.19-.1*(x-.4)/.85;[-1,1].forEach(s=>cone(g,WH,[x,-.03*(x-.4)-r*.85,s*r*.55],.022,.12,[Math.PI,0,0]))}
+  for(let t=.25;t<1;t+=.13)[-1,1].forEach(s=>cone(g,WH,[.2+.9*t,-.1-.31*t,s*.05],.02,.1));
+  [-1,0,1].forEach(k=>cone(g,DK,[-.05,.27,k*.06],.03,.4,[k*.2,0,1.05]))}
+ else{ell(g,mm,[.15,0,0],[.3,.15,.14]);tube(g,mm,[[.3,0,0],[.65,-.01,0],[1,-.04,0]],.12,.06);tube(g,mm,[[.2,-.1,0],[.6,-.12,0],[.95,-.14,0]],.07,.04);
+  for(let x=.35;x<.95;x+=.07)[-1,1].forEach(s=>{cone(g,WH,[x,-.12,s*.06],.014,.12,[Math.PI,0,0]);cone(g,WH,[x+.03,-.09,s*.05],.012,.1)});
+  [-1,1].forEach(s=>ell(g,mm,[.32,.1,s*.1],[.12,.05,.06]))}
+ [-1,1].forEach(s=>{if(sk)ell(g,DK,[ex,eh,s*ez],[.1,.1,.05]);else{ell(g,IR[i],[ex,eh,s*ez],[.085,.085,.085]);ell(g,DK,[ex+.045,eh,s*(ez+.02)],[.035,.05,.03]);ell(g,WH,[ex+.06,eh+.03,s*(ez+.04)],[.012,.012,.012]);ell(g,mm,[ex-.01,eh+.045,s*ez],[.1,.055,.1])}ell(g,DK,[NO[i][0],NO[i][1],s*NO[i][2]],[.03,.02,.02])});return g}
+function tx(base,spot,n,sz,st){const c=document.createElement("canvas");c.width=c.height=256;const x=c.getContext("2d");x.fillStyle=base;x.fillRect(0,0,256,256);x.fillStyle=spot;if(st)for(let k=0;k<8;k++){x.globalAlpha=.6;x.fillRect(k*32,0,10+Math.random()*6,256)}for(let k=0;k<n;k++){x.globalAlpha=.55+Math.random()*.4;x.beginPath();x.ellipse(Math.random()*256,Math.random()*256,sz*(.5+Math.random()),sz*(.5+Math.random()),Math.random()*3,0,7);x.fill()}const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,2);return t}
+function sb(){const c=document.createElement("canvas");c.width=c.height=128;const x=c.getContext("2d");x.fillStyle="#555";x.fillRect(0,0,128,128);for(let r=0;r<17;r++)for(let k=0;k<17;k++){const px=k*8+(r%2)*4,py=r*8,g=x.createRadialGradient(px,py,0,px,py,5);g.addColorStop(0,"#fff");g.addColorStop(1,"#555");x.fillStyle=g;x.beginPath();x.arc(px,py,5,0,7);x.fill()}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(6,4);return t}
+const IR=[M(0x5a2f12,.15),M(0xe0a820,.15),M(0xd09020,.15)],NO=[[.95,.04,.08],[1.12,.03,.05],[.88,.025,.04]];
+const lg=(x,z)=>({p:[[x,1,z],[x+.12,.55,z],[x,.08,z]],r:[.3,.2],b:.07,f:.4});
+const SP=[
+{c:0xffffff,tx:()=>tx("#9a7b54","#6e5236",170,7),b:0xcdb88c,a:0xb06a3a,back:[[-1.5,1.05,0],[-.6,1.25,0],[.5,1.25,0],[1.3,1.1,0]],vr:[.13,.1],tail:[[-1.5,1.05,0],[-2.5,.9,0],[-3.6,.45,0],[-4.4,.12,0]],tv:[.1,.03],tr:[.5,.05],rib:[7,-.8,.9,1.2,.6],legs:[[-1,-.5],[-1,.5],[.85,-.5],[.85,.5]].map(a=>lg(...a)),body:[[0,1.05,0],[1.6,.8,.78]],ex:[[[-.95,1.05,0],[.85,.82,.78]],[[.75,1.1,0],[.9,.8,.8]]],ns:3,nr:[.5,.38],h:[1.5,.95,0],hr:-.2,ey:[.45,.18,.27],ce:[-.9,1],di:9.5,w:6},
+{c:0xffffff,tx:()=>tx("#7b7757","#3c3a2b",30,4,1),b:0xd8cfa8,a:0x5d8fa0,back:[[-.4,1.05,0],[.2,1.2,0],[.8,1.4,0],[1.2,1.75,0]],vr:[.12,.08],tail:[[-.4,1.05,0],[-1.3,.95,0],[-2.3,.7,0],[-3.1,.6,0],[-3.8,.95,0],[-4.1,1.5,0]],tv:[.09,.025],tr:[.38,.03],rib:[5,-.1,.7,1.2,.38],legs:[-.3,.3].map(z=>({p:[[-.1,1,z],[.4,.65,z],[-.05,.3,z],[.35,.05,z]],r:[.13,.05],b:.05,f:.22})).concat([-.22,.22].map(z=>({p:[[.85,1.1,z],[1.15,.85,z],[1.45,.95,z]],r:[.06,.03],b:.03,f:.06}))),body:[[.15,1.1,0],[.9,.48,.4]],ex:[[[-.15,1.05,0],[.5,.5,.34]],[[.6,1.25,0],[.5,.38,.3]]],ns:3,nr:[.28,.13],h:[1.2,1.78,0],hr:-.25,ey:[.55,.1,.15],ce:[-1,1.1],di:8.8,w:5.5},
+{c:0xffffff,tx:()=>tx("#4a393c","#a35e2c",120,9),b:0xb9a78c,a:0x4a393c,back:[[-.9,.9,0],[0,1,0],[.8,1.2,0],[1.5,1.8,0],[1.95,2.6,0],[2.1,3.3,0],[2.5,3.75,0]],vr:[.14,.07],tail:[[-.9,.9,0],[-1.8,.8,0],[-3,.5,0]],tv:[.1,.03],tr:[.6,.04],rib:[8,-.8,.8,.95,.6],body:[[0,.85,0],[1.3,.62,.7]],ex:[[[-.6,.85,0],[.8,.6,.65]],[[.7,.95,0],[.8,.55,.6]]],ns:5,nr:[.42,.1],h:[2.55,3.75,0],hr:-.35,ey:[.32,.08,.11],ce:[.2,1.9],di:11,w:6}];
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true});R.setPixelRatio(1);R.setSize(640,400);R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.15;R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+const bc=document.createElement("canvas");bc.width=bc.height=64;{const x=bc.getContext("2d"),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,"rgba(0,0,0,.6)");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(0,0,64,64)}
+const BT=new THREE.CanvasTexture(bc);
+function build(s,i){const sk=new THREE.Group(),sn=new THREE.Group(),P=[];for(let k=0;k<5;k++){P[k]=new THREE.Group();sk.add(P[k])}
+ const hb=hd(i,1,BM,BM,s.ey);hb.position.set(...s.h);hb.rotation.z=s.hr;P[0].add(hb);
+ vert(P[1],s.back,s.vr);vert(P[4],s.tail,s.tv);ribs(P[2],...s.rib);
+ if(i<2)s.legs.forEach(l=>l.p.slice(1).forEach((q,j)=>rod(P[3],l.p[j],q,l.b)));
+ else[.7,-.7].forEach(x=>[-1,1].forEach(z=>[-.5,0,.5].forEach(a=>rod(P[3],[x,.75,z*.45],[x-.5+Math.sin(a)*.4,.45,z*(.45+Math.cos(a)*.9)],.035))));
+ const m=M(s.c,.75),bl=M(s.b,.7),[bp,bs]=s.body;if(s.tx){m.map=s.tx();m.bumpMap=sb();m.bumpScale=3}
+ ell(sn,m,bp,bs);(s.ex||[]).forEach(([p,q])=>ell(sn,m,p,q));ell(sn,bl,[bp[0],bp[1]-bs[1]*.35,0],bs.map(v=>v*.82));
+ tube(sn,m,s.back.slice(-s.ns),...s.nr);tube(sn,m,s.tail,...s.tr);
+ if(i<2)s.legs.forEach(l=>{tube(sn,m,l.p,...l.r);const q=l.p[l.p.length-1];ell(sn,m,[q[0]+.1,q[1],q[2]],[l.f,.07,.12]);const fw=l.f>.2;cone(sn,BM,fw?[q[0]+.1+l.f,q[1],q[2]]:[q[0]+.1,q[1]-.08,q[2]],.03,.2,fw?[0,0,-1.57]:[0,0,-.9])});if(i==0)[[-1,.5],[.85,.5]].forEach(([x,zz])=>[-1,1].forEach(z=>ell(sn,m,[x,.95,z*zz],[.5,.6,.32])));
+ if(i==1){[-1,1].forEach(z=>ell(sn,m,[.1,.85,z*.3],[.38,.3,.18],[0,0,.5]));const sm=M(0x6b2a0a);for(let k=0;k<6;k++){const x=-.45+k*.25;ell(sn,sm,[x,1.1+.48*Math.sqrt(Math.max(0,1-((x-.15)/.9)**2))-.03,0],[.05,.05,.26])}}
+ if(i==2)[[.7,.95],[-.7,.8]].forEach(([x,L])=>[-1,1].forEach(z=>ell(sn,m,[x-.6*L,.45,z*(.5+.68*L)],[L,.05,.2],[0,z*.85,z*.15])));
+ const hs=hd(i,0,m,i?m:M(s.a),s.ey);hs.position.set(...s.h);hs.rotation.z=s.hr;sn.add(hs);
+ const sc=new THREE.Scene(),pv=new THREE.Group(),inn=new THREE.Group(),cam=new THREE.PerspectiveCamera(35,1.6,.1,100);
+ inn.add(sk,sn);inn.position.x=-s.ce[0];pv.add(inn);sc.add(pv);
+ sc.add(new THREE.HemisphereLight(0xfff4dc,0x6b4a2a,.95));const k1=new THREE.DirectionalLight(0xfff0d8,1.3);k1.position.set(4,8,5);k1.castShadow=true;k1.shadow.mapSize.set(1024,1024);Object.assign(k1.shadow.camera,{left:-7,right:7,top:7,bottom:-7,near:1,far:25});k1.shadow.bias=-.0006;sc.add(k1);const k2=new THREE.DirectionalLight(0x9fd0ff,.4);k2.position.set(-4,3,-4);sc.add(k2);
+ const bg=new THREE.PlaneGeometry(40,40);bg.rotateX(-Math.PI/2);const bl2=new THREE.Mesh(bg,new THREE.ShadowMaterial({opacity:.45}));bl2.position.y=.01;sc.add(bl2);sc.traverse(o=>{if(o.isMesh&&o!==bl2)o.castShadow=o.receiveShadow=true});bl2.receiveShadow=true;
+ cam.position.set(0,s.ce[1]+1.4,s.di);cam.lookAt(0,s.ce[1]*.9,0);return{sk,sn,pv,sc,cam,P,bl:bl2,w:s.w}}
+const W=SP.map(build);let pop=null,hop0=0,landed=0;
+function draw(cv,i,y,ry,sq,done){const w=W[i];w.sk.visible=!done;w.sn.visible=!!done;
+ w.P.forEach((p,k)=>{p.visible=!!have[i][k];const e=pop&&pop.d==i&&pop.k==k?Math.min(1,(performance.now()-pop.t)/600):1;p.position.y=(1-e)*(1-e)*2});
+ const q=1/Math.sqrt(sq);w.pv.rotation.y=ry;w.pv.position.y=y;w.pv.scale.set(q,sq,q);
+ R.render(w.sc,w.cam);const c=cv.getContext("2d");c.clearRect(0,0,640,400);c.drawImage(R.domElement,0,0)}
+function frame(){requestAnimationFrame(frame);const t=performance.now();
+ document.querySelectorAll("canvas.c3").forEach(cv=>{const i=+cv.dataset.i;
+  if(cv.id=="bigc"){const u=(t-hop0)/900,h=u<6?Math.abs(Math.sin(Math.PI*u)):0;
+   if(landed<6&&u>=landed+1){landed++;tone(90,0,.18,"sine",.3,40)}
+   draw(cv,i,h*1.2,.55+Math.min(u,6)/3*2*Math.PI,u<6?.92+.16*h:1+.012*Math.sin(t/500),1)}
+  else draw(cv,i,0,t*.0004+i*1.3,1,cv.classList.contains("fin"))})}
+function renderSk(){if(newest)pop={d:newest[0],k:newest[1],t:performance.now()};$("skels").innerHTML=D.map((d,i)=>{const n=have[i].filter(Boolean).length;return`<div class="card ${n==5?"done":""}"><b><span>${d.n}</span><span>${n}/5</span></b><canvas class="c3 ${n==5?"fin":""}" data-i="${i}" width="640" height="400"></canvas></div>`}).join("");newest=null}
+function live(i){hop0=performance.now();landed=0;return`<canvas class="c3 fin" id="bigc" data-i="${i}" width="640" height="400"></canvas>`}
+start();frame();
+</script></body></html>
